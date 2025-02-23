@@ -1,9 +1,9 @@
-
 import React, { useState } from 'react';
 import { ImageUpload } from '@/components/ImageUpload';
 import { ROIAnalysis } from '@/components/ROIAnalysis';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
+import { analyzeImage } from '@/services/geminiService';
 
 // Mock data - replace with actual API call later
 const mockApiResponse = async (file: File, acquisitionCost: number) => {
@@ -12,60 +12,9 @@ const mockApiResponse = async (file: File, acquisitionCost: number) => {
     formData.append('image', file);
     formData.append('acquisitionCost', acquisitionCost.toString());
 
-    // TODO: Replace with your actual API endpoint
-    const response = await fetch('/api/analyze', {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (!response.ok) {
-      throw new Error('Analysis failed');
-    }
-
-    // For now, return mock data until API is connected
-    const calculateROI = (sellingPrice: number, fees: number) => {
-      const profit = sellingPrice - acquisitionCost - fees;
-      const roi = (profit / acquisitionCost) * 100;
-      return { profit, roi };
-    };
-
-    const lowPrice = 25.00;
-    const medPrice = 45.00;
-    const highPrice = 75.00;
-
-    const lowFees = lowPrice * 0.13;
-    const medFees = medPrice * 0.13;
-    const highFees = highPrice * 0.13;
-
-    const lowROI = calculateROI(lowPrice, lowFees);
-    const medROI = calculateROI(medPrice, medFees);
-    const highROI = calculateROI(highPrice, highFees);
-
-    return {
-      options: [
-        {
-          type: 'Low',
-          sellingPrice: lowPrice,
-          fees: lowFees,
-          profit: lowROI.profit,
-          roi: lowROI.roi,
-        },
-        {
-          type: 'Medium',
-          sellingPrice: medPrice,
-          fees: medFees,
-          profit: medROI.profit,
-          roi: medROI.roi,
-        },
-        {
-          type: 'High',
-          sellingPrice: highPrice,
-          fees: highFees,
-          profit: highROI.profit,
-          roi: highROI.roi,
-        },
-      ],
-    };
+    // Call Gemini API for analysis
+    const response = await analyzeImage(file, acquisitionCost);
+    return response;
   } catch (error) {
     console.error('Analysis error:', error);
     throw error;
