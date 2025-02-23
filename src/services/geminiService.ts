@@ -2,7 +2,8 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Initialize the Gemini AI client
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+const genAI = new GoogleGenerativeAI(apiKey);
 
 const model = genAI.getGenerativeModel({
   model: "gemini-2.0-flash-thinking-exp-01-21",
@@ -16,26 +17,24 @@ const model = genAI.getGenerativeModel({
 
 export const analyzeImage = async (imageFile: File, acquisitionCost: number) => {
   try {
+    if (!apiKey) {
+      throw new Error('Gemini API key not configured');
+    }
+
     const chatSession = model.startChat();
     // Convert image file to proper format for Gemini
     const imageData = await imageFile.arrayBuffer();
     
     // Send image and acquisition cost to Gemini
-    const result = await chatSession.sendMessage({
-      contents: [
-        {
-          parts: [
-            { text: `Analyze this image with acquisition cost: $${acquisitionCost}` },
-            {
-              inlineData: {
-                mimeType: imageFile.type,
-                data: Buffer.from(imageData).toString('base64')
-              }
-            }
-          ]
+    const result = await chatSession.sendMessage([
+      { text: `Analyze this image with acquisition cost: $${acquisitionCost}` },
+      {
+        inlineData: {
+          mimeType: imageFile.type,
+          data: Buffer.from(imageData).toString('base64')
         }
-      ]
-    });
+      }
+    ]);
 
     // Parse the response and extract pricing information
     const response = result.response.text();
