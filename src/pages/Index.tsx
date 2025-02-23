@@ -6,31 +6,50 @@ import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 
 // Mock data - replace with actual API call later
-const mockApiResponse = (file: File) => {
+const mockApiResponse = (file: File, acquisitionCost: number) => {
   return new Promise((resolve) => {
     setTimeout(() => {
+      // Calculate ROI based on acquisition cost
+      const calculateROI = (sellingPrice: number, fees: number) => {
+        const profit = sellingPrice - acquisitionCost - fees;
+        const roi = (profit / acquisitionCost) * 100;
+        return { profit, roi };
+      };
+
+      const lowPrice = 25.00;
+      const medPrice = 45.00;
+      const highPrice = 75.00;
+
+      const lowFees = lowPrice * 0.13;  // 13% fees
+      const medFees = medPrice * 0.13;
+      const highFees = highPrice * 0.13;
+
+      const lowROI = calculateROI(lowPrice, lowFees);
+      const medROI = calculateROI(medPrice, medFees);
+      const highROI = calculateROI(highPrice, highFees);
+
       resolve({
         options: [
           {
             type: 'Low',
-            sellingPrice: 25.00,
-            fees: 3.25,
-            profit: 11.75,
-            roi: 112.5,
+            sellingPrice: lowPrice,
+            fees: lowFees,
+            profit: lowROI.profit,
+            roi: lowROI.roi,
           },
           {
             type: 'Medium',
-            sellingPrice: 45.00,
-            fees: 5.85,
-            profit: 29.15,
-            roi: 278.6,
+            sellingPrice: medPrice,
+            fees: medFees,
+            profit: medROI.profit,
+            roi: medROI.roi,
           },
           {
             type: 'High',
-            sellingPrice: 75.00,
-            fees: 9.75,
-            profit: 55.25,
-            roi: 527.4,
+            sellingPrice: highPrice,
+            fees: highFees,
+            profit: highROI.profit,
+            roi: highROI.roi,
           },
         ],
       });
@@ -43,10 +62,10 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleImageUpload = async (file: File) => {
+  const handleImageUpload = async (file: File, acquisitionCost: number) => {
     setIsLoading(true);
     try {
-      const response = await mockApiResponse(file);
+      const response = await mockApiResponse(file, acquisitionCost);
       setAnalysisResults(response);
       toast({
         title: "Analysis Complete",
@@ -82,7 +101,7 @@ const Index = () => {
       <div className="text-center space-y-4 animate-fadeIn">
         <h1 className="text-4xl font-bold">eBay ROI Analyzer</h1>
         <p className="text-muted-foreground">
-          Upload an image to analyze potential ROI for your eBay listings
+          Upload an image and enter acquisition cost to analyze potential ROI
         </p>
       </div>
 
