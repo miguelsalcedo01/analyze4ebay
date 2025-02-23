@@ -6,64 +6,127 @@ import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 
 // Mock data - replace with actual API call later
-const mockApiResponse = (file: File, acquisitionCost: number) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // Calculate ROI based on acquisition cost
-      const calculateROI = (sellingPrice: number, fees: number) => {
-        const profit = sellingPrice - acquisitionCost - fees;
-        const roi = (profit / acquisitionCost) * 100;
-        return { profit, roi };
-      };
+const mockApiResponse = async (file: File, acquisitionCost: number) => {
+  try {
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('acquisitionCost', acquisitionCost.toString());
 
-      const lowPrice = 25.00;
-      const medPrice = 45.00;
-      const highPrice = 75.00;
+    // TODO: Replace with your actual API endpoint
+    const response = await fetch('/api/analyze', {
+      method: 'POST',
+      body: formData,
+    });
 
-      const lowFees = lowPrice * 0.13;  // 13% fees
-      const medFees = medPrice * 0.13;
-      const highFees = highPrice * 0.13;
+    if (!response.ok) {
+      throw new Error('Analysis failed');
+    }
 
-      const lowROI = calculateROI(lowPrice, lowFees);
-      const medROI = calculateROI(medPrice, medFees);
-      const highROI = calculateROI(highPrice, highFees);
+    // For now, return mock data until API is connected
+    const calculateROI = (sellingPrice: number, fees: number) => {
+      const profit = sellingPrice - acquisitionCost - fees;
+      const roi = (profit / acquisitionCost) * 100;
+      return { profit, roi };
+    };
 
-      resolve({
-        options: [
-          {
-            type: 'Low',
-            sellingPrice: lowPrice,
-            fees: lowFees,
-            profit: lowROI.profit,
-            roi: lowROI.roi,
-          },
-          {
-            type: 'Medium',
-            sellingPrice: medPrice,
-            fees: medFees,
-            profit: medROI.profit,
-            roi: medROI.roi,
-          },
-          {
-            type: 'High',
-            sellingPrice: highPrice,
-            fees: highFees,
-            profit: highROI.profit,
-            roi: highROI.roi,
-          },
-        ],
-      });
-    }, 1500);
-  });
+    const lowPrice = 25.00;
+    const medPrice = 45.00;
+    const highPrice = 75.00;
+
+    const lowFees = lowPrice * 0.13;
+    const medFees = medPrice * 0.13;
+    const highFees = highPrice * 0.13;
+
+    const lowROI = calculateROI(lowPrice, lowFees);
+    const medROI = calculateROI(medPrice, medFees);
+    const highROI = calculateROI(highPrice, highFees);
+
+    return {
+      options: [
+        {
+          type: 'Low',
+          sellingPrice: lowPrice,
+          fees: lowFees,
+          profit: lowROI.profit,
+          roi: lowROI.roi,
+        },
+        {
+          type: 'Medium',
+          sellingPrice: medPrice,
+          fees: medFees,
+          profit: medROI.profit,
+          roi: medROI.roi,
+        },
+        {
+          type: 'High',
+          sellingPrice: highPrice,
+          fees: highFees,
+          profit: highROI.profit,
+          roi: highROI.roi,
+        },
+      ],
+    };
+  } catch (error) {
+    console.error('Analysis error:', error);
+    throw error;
+  }
+};
+
+const approveListingApi = async (option: any, imageFile: File) => {
+  try {
+    const formData = new FormData();
+    formData.append('image', imageFile);
+    formData.append('listingData', JSON.stringify(option));
+
+    // TODO: Replace with your actual API endpoint
+    const response = await fetch('/api/approve-listing', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to approve listing');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Approval error:', error);
+    throw error;
+  }
+};
+
+const saveForLaterApi = async (option: any, imageFile: File) => {
+  try {
+    const formData = new FormData();
+    formData.append('image', imageFile);
+    formData.append('listingData', JSON.stringify(option));
+
+    // TODO: Replace with your actual API endpoint
+    const response = await fetch('/api/save-listing', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to save listing');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Save error:', error);
+    throw error;
+  }
 };
 
 const Index = () => {
   const [analysisResults, setAnalysisResults] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [currentImageFile, setCurrentImageFile] = useState<File | null>(null);
   const { toast } = useToast();
 
   const handleImageUpload = async (file: File, acquisitionCost: number) => {
     setIsLoading(true);
+    setCurrentImageFile(file);
     try {
       const response = await mockApiResponse(file, acquisitionCost);
       setAnalysisResults(response);
@@ -82,18 +145,66 @@ const Index = () => {
     }
   };
 
-  const handleApprove = (option: any) => {
-    toast({
-      title: "Listing Approved",
-      description: `Item will be listed at $${option.sellingPrice}`,
-    });
+  const handleApprove = async (option: any) => {
+    if (!currentImageFile) {
+      toast({
+        title: "Error",
+        description: "Image data not found",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await approveListingApi(option, currentImageFile);
+      toast({
+        title: "Listing Approved",
+        description: `Item will be listed at $${option.sellingPrice}`,
+      });
+      // Reset the form after successful approval
+      setAnalysisResults(null);
+      setCurrentImageFile(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to approve listing",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSaveForLater = (option: any) => {
-    toast({
-      title: "Saved for Later",
-      description: "Item has been saved to your drafts",
-    });
+  const handleSaveForLater = async (option: any) => {
+    if (!currentImageFile) {
+      toast({
+        title: "Error",
+        description: "Image data not found",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await saveForLaterApi(option, currentImageFile);
+      toast({
+        title: "Saved for Later",
+        description: "Item has been saved to your drafts",
+      });
+      // Reset the form after successful save
+      setAnalysisResults(null);
+      setCurrentImageFile(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save listing",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
