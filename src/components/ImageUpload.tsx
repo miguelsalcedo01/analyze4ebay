@@ -106,17 +106,20 @@ export const ImageUpload = ({ onImageUpload }: ImageUploadProps) => {
             </p>
           </div>
           {!selectedFile && (
-            <label className="cursor-pointer">
-              <Button variant="secondary">
-                Browse Files
-                <input
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  onChange={handleFileInput}
-                />
-              </Button>
-            </label>
+            <div>
+              <input
+                type="file"
+                id="file-input"
+                className="hidden"
+                accept="image/*"
+                onChange={handleFileInput}
+              />
+              <label htmlFor="file-input">
+                <Button variant="secondary" className="cursor-pointer">
+                  Browse Files
+                </Button>
+              </label>
+            </div>
           )}
         </div>
       </Card>
